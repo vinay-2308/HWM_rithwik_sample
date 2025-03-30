@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ plan.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ plan.name }}</h1>
+        <div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDayModal">
+                <i class="fas fa-plus"></i> Add Workout Day
+            </button>
+            <a href="{% url 'workout_plans' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Plans
+            </a>
+        </div>
+    </div>
+    
+    {% if plan.description %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Description</h5>
+            <p class="card-text">{{ plan.description }}</p>
+        </div>
+    </div>
+    {% endif %}
+    
+    <h2 class="mb-3">Workout Days</h2>
+    
+    {% if workout_days %}
+    <div class="row">
+        {% for day in workout_days %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">{{ day.day_name }}</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenu{{ day.pk }}" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenu{{ day.pk }}">
+                            <li><a class="dropdown-item" href="{% url 'workout_day_detail' day.pk %}">Edit Exercises</a></li>
+                            <li><a class="dropdown-item" href="{% url 'start_workout_day' day.pk %}">Start Workout</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#">Delete Day</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% with exercises=day.exercises.all %}
+                    {% if exercises %}
+                    <ul class="list-group list-group-flush">
+                        {% for exercise in exercises|dictsortreversed:"order" %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ exercise.exercise.name }}
+                            <span class="badge bg-primary rounded-pill">{{ exercise.sets }} x {{ exercise.reps }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">No exercises added yet.</p>
+                    <a href="{% url 'workout_day_detail' day.pk %}" class="btn btn-sm btn-outline-primary">Add Exercises</a>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="{% url 'start_workout_day' day.pk %}" class="btn btn-success w-100">
+                        <i class="fas fa-play"></i> Start Workout
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> This plan doesn't have any workout days yet. Click 'Add Workout Day' to get started!
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Day Modal -->
+<div class="modal fade" id="addDayModal" tabindex="-1" aria-labelledby="addDayModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addDayModalLabel">Add Workout Day</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="{{ form.day_name.id_for_label }}" class="form-label">Day Name</label>
+                        {{ form.day_name }}
+                        <small class="form-text text-muted">Examples: Monday, Tuesday, Push Day, Leg Day, etc.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Day</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

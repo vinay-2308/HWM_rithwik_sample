@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="mb-4">Dashboard</h1>
+    
+    <div class="row">
+        <!-- Today's Workout Widget -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Today's Workout</h5>
+                </div>
+                <div class="card-body">
+                    {% if today_workout %}
+                        <h4>{{ today_workout.workout_day.day_name }} - {{ today_workout.workout_plan.name }}</h4>
+                        <p>Status: {% if today_workout.completed %}Completed{% else %}Not completed{% endif %}</p>
+                        {% if not today_workout.completed %}
+                            <a href="{% url 'perform_workout' log_pk=today_workout.pk %}" class="btn btn-primary">Continue Workout</a>
+                        {% else %}
+                            <a href="{% url 'workout' %}" class="btn btn-outline-primary">View Workouts</a>
+                        {% endif %}
+                    {% else %}
+                        <p>No workout scheduled for today.</p>
+                        <a href="{% url 'workout' %}" class="btn btn-primary">Start a Workout</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progress Overview Widget -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Progress Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="text-center">
+                            <h3>{{ recent_logs.count }}</h3>
+                            <p>Recent Workouts</p>
+                        </div>
+                        <div class="text-center">
+                            <h3>{{ workout_plans.count }}</h3>
+                            <p>Workout Plans</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'progress' %}" class="btn btn-outline-primary w-100 mt-3">View Detailed Progress</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Workout Plans -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Your Workout Plans</h5>
+                    <a href="{% url 'workout_plans' %}" class="btn btn-sm btn-primary">Create New Plan</a>
+                </div>
+                <div class="card-body">
+                    {% if workout_plans %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for plan in workout_plans %}
+                                    <tr>
+                                        <td>{{ plan.name }}</td>
+                                        <td>{{ plan.description|truncatechars:50 }}</td>
+                                        <td>{{ plan.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                {% if plan.workout_days.all %}
+                                                    <a href="{% url 'start_workout_day' plan.workout_days.first.pk %}" class="btn btn-sm btn-success">Start</a>
+                                                {% else %}
+                                                    <a href="{% url 'workout_plan_detail' pk=plan.pk %}" class="btn btn-sm btn-success">Add Days</a>
+                                                {% endif %}
+                                                <a href="{% url 'workout_plan_detail' pk=plan.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+                                                <a href="{% url 'delete_workout_plan' pk=plan.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>You don't have any workout plans yet. Create one to get started!</p>
+                        <a href="{% url 'workout_plans' %}" class="btn btn-primary">Create Your First Plan</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

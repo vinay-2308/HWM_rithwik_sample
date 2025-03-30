@@ -1,0 +1,439 @@
+/**
+ * Home Workout Manager Library Styles
+ * CSS styles for the custom components used by the workout library
+ */
+
+/* Timer Display */
+.workout-timer {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 1rem;
+    line-height: 1;
+    color: var(--primary);
+}
+
+.workout-timer-container {
+    background-color: white;
+    border-radius: var(--border-radius-lg);
+    padding: 1rem;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+}
+
+.dark-mode .workout-timer-container {
+    background-color: var(--gray-800);
+}
+
+.workout-timer-controls {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* Countdown Timer */
+.workout-countdown {
+    font-size: 3rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 1rem;
+    line-height: 1;
+    color: var(--primary);
+    transition: color 0.2s;
+}
+
+.workout-countdown.warning {
+    color: var(--warning);
+}
+
+.workout-countdown.danger {
+    color: var(--danger);
+}
+
+/* Progress Circle */
+.progress-circle-container {
+    position: relative;
+    display: inline-block;
+}
+
+.progress-circle {
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+}
+
+.progress-circle-bg {
+    fill: none;
+    stroke: var(--gray-200);
+    stroke-width: 4;
+}
+
+.progress-circle-value {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.2s ease;
+}
+
+.progress-circle-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.dark-mode .progress-circle-bg {
+    stroke: var(--gray-700);
+}
+
+.dark-mode .progress-circle-text {
+    color: var(--gray-200);
+}
+
+/* Draggable Items */
+.draggable-item {
+    cursor: grab;
+    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.draggable-item:active {
+    cursor: grabbing;
+}
+
+.draggable-item.dragging {
+    opacity: 0.5;
+    transform: scale(1.02);
+    box-shadow: var(--shadow-lg);
+}
+
+.draggable-handle {
+    cursor: grab;
+    color: var(--gray-500);
+    padding: 0.5rem;
+}
+
+.draggable-handle:active {
+    cursor: grabbing;
+}
+
+.draggable-container {
+    min-height: 50px;
+    padding: 0.5rem;
+    border-radius: var(--border-radius-md);
+    transition: background-color 0.2s;
+}
+
+.draggable-container.drag-over {
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+.dark-mode .draggable-container.drag-over {
+    background-color: rgba(72, 149, 239, 0.1);
+}
+
+/* Custom Notifications */
+.workout-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 350px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    overflow: hidden;
+    transition: opacity 0.3s, transform 0.3s;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.workout-notification.fade-out {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.workout-notification .notification-content {
+    padding: 16px;
+}
+
+.workout-notification h4 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.workout-notification p {
+    margin: 0;
+    font-size: 14px;
+    color: #555;
+}
+
+.workout-notification .notification-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #aaa;
+}
+
+.dark-mode .workout-notification {
+    background-color: #333;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .workout-notification h4 {
+    color: #eee;
+}
+
+.dark-mode .workout-notification p {
+    color: #bbb;
+}
+
+/* Exercise Card */
+.exercise-card {
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-bottom: 1.5rem;
+}
+
+.exercise-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.exercise-card.completed {
+    border-color: var(--success);
+    border-width: 2px;
+}
+
+.exercise-card .exercise-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background-color: white;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.dark-mode .exercise-card .exercise-header {
+    background-color: var(--gray-800);
+    border-bottom-color: var(--gray-700);
+}
+
+.exercise-card .exercise-title {
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.exercise-card .exercise-body {
+    padding: 1.5rem;
+}
+
+.exercise-card .exercise-image {
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: var(--border-radius-md);
+    margin-bottom: 1rem;
+}
+
+.exercise-card .exercise-sets {
+    margin-top: 1rem;
+}
+
+.exercise-card .set-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.exercise-card .set-number {
+    font-weight: 600;
+    width: 40px;
+}
+
+.exercise-card .exercise-notes {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.dark-mode .exercise-card .exercise-notes {
+    border-top-color: var(--gray-700);
+}
+
+/* Rest Timer */
+.rest-timer-container {
+    text-align: center;
+    padding: 1rem;
+    background-color: var(--primary-light);
+    color: white;
+    border-radius: var(--border-radius-lg);
+    margin: 1rem 0;
+    box-shadow: var(--shadow-md);
+}
+
+.rest-timer-label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.rest-timer-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.dark-mode .rest-timer-container {
+    background-color: var(--primary-dark);
+}
+
+/* Workout Progress */
+.workout-progress-container {
+    margin-bottom: 1.5rem;
+}
+
+.workout-progress-bar {
+    height: 8px;
+    background-color: var(--gray-200);
+    border-radius: var(--border-radius-full);
+    overflow: hidden;
+}
+
+.workout-progress-value {
+    height: 100%;
+    background-color: var(--primary);
+    border-radius: var(--border-radius-full);
+    transition: width 0.3s ease;
+}
+
+.workout-progress-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+}
+
+.workout-progress-label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.dark-mode .workout-progress-bar {
+    background-color: var(--gray-700);
+}
+
+.dark-mode .workout-progress-label {
+    color: var(--gray-400);
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.pulse-animation {
+    animation: pulse 1.5s infinite;
+}
+
+/* Custom Badge */
+.workout-badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: var(--border-radius-full);
+    color: white;
+}
+
+.workout-badge.primary {
+    background-color: var(--primary);
+}
+
+.workout-badge.success {
+    background-color: var(--success);
+}
+
+.workout-badge.warning {
+    background-color: var(--warning);
+}
+
+.workout-badge.danger {
+    background-color: var(--danger);
+}
+
+/* Custom Buttons */
+.workout-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    border-radius: var(--border-radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.workout-button i, 
+.workout-button .fas, 
+.workout-button .far {
+    margin-right: 0.5rem;
+}
+
+.workout-button.primary {
+    background-color: var(--primary);
+    color: white;
+}
+
+.workout-button.primary:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+.workout-button.outline-primary {
+    background-color: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.workout-button.outline-primary:hover {
+    background-color: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.workout-button.success {
+    background-color: var(--success);
+    color: white;
+}
+
+.workout-button.outline-success {
+    background-color: transparent;
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+
+.workout-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}

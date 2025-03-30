@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Workout Plans{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Workout Plans</h1>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPlanModal">
+            <i class="fas fa-plus"></i> Create New Plan
+        </button>
+    </div>
+    
+    {% if plans %}
+    <div class="row">
+        {% for plan in plans %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">{{ plan.name }}</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenu{{ plan.pk }}" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenu{{ plan.pk }}">
+                            <li><a class="dropdown-item" href="{% url 'workout_plan_detail' plan.pk %}">View Details</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{% url 'delete_workout_plan' plan.pk %}">Delete Plan</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ plan.description|truncatechars:100 }}</p>
+                    {% with day_count=plan.days.count %}
+                    <p class="text-muted"><i class="fas fa-calendar-day"></i> {{ day_count }} workout day{{ day_count|pluralize }}</p>
+                    {% endwith %}
+                </div>
+                <div class="card-footer bg-transparent d-grid gap-2">
+                    <a href="{% url 'workout_plan_detail' plan.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit Plan
+                    </a>
+                    <a href="{% url 'start_workout' %}?plan={{ plan.pk }}" class="btn btn-success">
+                        <i class="fas fa-play"></i> Start Workout
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> You haven't created any workout plans yet. Click 'Create New Plan' to get started!
+    </div>
+    {% endif %}
+</div>
+
+<!-- Create Plan Modal -->
+<div class="modal fade" id="createPlanModal" tabindex="-1" aria-labelledby="createPlanModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createPlanModalLabel">Create New Workout Plan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {{ form|crispy }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

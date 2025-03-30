@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Logout{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-center">Logout</h2>
+            </div>
+            <div class="card-body text-center">
+                <p class="mb-4">You have been successfully logged out.</p>
+                <p>Thank you for using Home Workout Manager!</p>
+                <div class="mt-4">
+                    <a href="{% url 'login' %}" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt me-2"></i>Log In Again
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

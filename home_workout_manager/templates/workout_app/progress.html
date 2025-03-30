@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Progress Tracking{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/workout-library.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 fade-in">
+    <h1 class="mb-4">Progress Tracking</h1>
+    
+    <!-- Stats Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-4">
+            <div class="card progress-card shadow-sm">
+                <div class="card-body stat-card">
+                    <div class="stat-value text-primary">{{ workouts_this_week }}</div>
+                    <div class="stat-label text-muted">Workouts This Week</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-4">
+            <div class="card progress-card shadow-sm">
+                <div class="card-body stat-card">
+                    <div class="stat-value text-success">{{ workouts_this_month }}</div>
+                    <div class="stat-label text-muted">Workouts This Month</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-4">
+            <div class="card progress-card shadow-sm">
+                <div class="card-body stat-card">
+                    <div class="stat-value text-info">{{ total_workouts }}</div>
+                    <div class="stat-label text-muted">Total Workouts</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-4">
+            <div class="card progress-card shadow-sm">
+                <div class="card-body stat-card">
+                    <div class="stat-value text-warning">{{ avg_duration|floatformat:0 }}</div>
+                    <div class="stat-label text-muted">Avg. Workout (minutes)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Advanced Stats -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 hover-shadow">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Workout Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Total Workout Time</th>
+                                    <td>{{ total_duration|floatformat:0 }} minutes</td>
+                                </tr>
+                                <tr>
+                                    <th>Most Common Workout</th>
+                                    <td>{{ most_common_workout|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Longest Streak</th>
+                                    <td>{{ longest_streak|default:0 }} days</td>
+                                </tr>
+                                <tr>
+                                    <th>Current Streak</th>
+                                    <td>{{ current_streak|default:0 }} days</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 hover-shadow">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Workout Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="workoutDistributionChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Workout History -->
+    <div class="card hover-shadow">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Workout History</h5>
+            <div class="btn-group">
+                <button type="button" class="btn btn-sm btn-outline-secondary active" id="filterAll">All</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="filterMonth">This Month</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="filterWeek">This Week</button>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if workout_logs %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="workoutHistoryTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Workout Plan</th>
+                            <th>Workout Day</th>
+                            <th>Duration</th>
+                            <th>Completed</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in workout_logs %}
+                        <tr data-date="{{ log.date|date:'Y-m-d' }}">
+                            <td>{{ log.date|date:"M d, Y" }}</td>
+                            <td>{{ log.workout_plan.name }}</td>
+                            <td>{{ log.workout_day.day_name }}</td>
+                            <td>{{ log.duration }} minutes</td>
+                            <td>
+                                {% if log.completed %}
+                                <span class="badge bg-success">Completed</span>
+                                {% else %}
+                                <span class="badge bg-warning">In Progress</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#detailsModal{{ log.pk }}">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Details Modal -->
+                        <div class="modal fade" id="detailsModal{{ log.pk }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Workout Details - {{ log.date|date:"F d, Y" }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <h6>{{ log.workout_plan.name }} - {{ log.workout_day.day_name }}</h6>
+                                        <p><strong>Duration:</strong> {{ log.duration }} minutes</p>
+                                        
+                                        <h6 class="mt-4">Exercise Details:</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Exercise</th>
+                                                        <th>Sets × Reps</th>
+                                                        <th>Weight</th>
+                                                        <th>Notes</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for exercise_log in log.exerciselog_set.all %}
+                                                    <tr>
+                                                        <td>{{ exercise_log.exercise.name }}</td>
+                                                        <td>
+                                                            {% if exercise_log.sets_completed > 0 %}
+                                                                {{ exercise_log.sets_completed }} × 
+                                                                {% with reps=exercise_log.reps_completed|safe %}
+                                                                    {% if reps %}
+                                                                        {{ reps|join:", " }}
+                                                                    {% else %}
+                                                                        0
+                                                                    {% endif %}
+                                                                {% endwith %}
+                                                            {% else %}
+                                                                Not recorded
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% with weights=exercise_log.weight_used|safe %}
+                                                                {% if weights %}
+                                                                    {{ weights|join:", " }} kg
+                                                                {% else %}
+                                                                    Not recorded
+                                                                {% endif %}
+                                                            {% endwith %}
+                                                        </td>
+                                                        <td>{{ exercise_log.notes|default:"No notes" }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> You haven't completed any workouts yet. Start a workout to begin tracking your progress!
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/workout-library.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    // Initialize workout distribution chart
+    const workoutDistributionData = workoutDistributionDataFromServer;
+    
+    WorkoutManager.initChart('workoutDistributionChart', {
+        type: 'bar',
+        data: {
+            labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+            datasets: [{
+                label: 'Workouts by Day of Week',
+                data: workoutDistributionData,
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(153, 102, 255, 0.6)',
+                    'rgba(255, 159, 64, 0.6)',
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(255, 205, 86, 0.6)',
+                    'rgba(201, 203, 207, 0.6)'
+                ],
+                borderColor: [
+                    'rgb(75, 192, 192)',
+                    'rgb(54, 162, 235)',
+                    'rgb(153, 102, 255)',
+                    'rgb(255, 159, 64)',
+                    'rgb(255, 99, 132)',
+                    'rgb(255, 205, 86)',
+                    'rgb(201, 203, 207)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+        
+        // Set up filter functionality for the workout history table
+        const table = document.getElementById('workoutHistoryTable');
+        const rows = table ? table.querySelectorAll('tbody tr') : [];
+        const filterAllBtn = document.getElementById('filterAll');
+        const filterMonthBtn = document.getElementById('filterMonth');
+        const filterWeekBtn = document.getElementById('filterWeek');
+        
+        if (filterAllBtn && filterMonthBtn && filterWeekBtn && rows.length > 0) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            // Calculate start of week (Sunday)
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay());
+            
+            // Calculate start of month
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            // Filter functions
+            function filterAll() {
+                rows.forEach(row => {
+                    row.style.display = '';
+                });
+                setActiveFilter(filterAllBtn);
+            }
+            
+            function filterByMonth() {
+                rows.forEach(row => {
+                    const dateStr = row.dataset.date;
+                    if (dateStr) {
+                        const date = new Date(dateStr);
+                        row.style.display = (date >= startOfMonth) ? '' : 'none';
+                    }
+                });
+                setActiveFilter(filterMonthBtn);
+            }
+            
+            function filterByWeek() {
+                rows.forEach(row => {
+                    const dateStr = row.dataset.date;
+                    if (dateStr) {
+                        const date = new Date(dateStr);
+                        row.style.display = (date >= startOfWeek) ? '' : 'none';
+                    }
+                });
+                setActiveFilter(filterWeekBtn);
+            }
+            
+            function setActiveFilter(activeBtn) {
+                [filterAllBtn, filterMonthBtn, filterWeekBtn].forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                activeBtn.classList.add('active');
+            }
+            
+            // Add event listeners
+            filterAllBtn.addEventListener('click', filterAll);
+            filterMonthBtn.addEventListener('click', filterByMonth);
+            filterWeekBtn.addEventListener('click', filterByWeek);
+            
+            // Initialize with "All" filter
+            filterAll();
+        }
+    });
+</script>
+{% endblock %}

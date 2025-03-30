@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load workout_tags %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Your Workout Statistics</h1>
+    
+    <!-- Time Period Selector -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Time Period</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="d-flex">
+                <select name="period" class="form-select me-2" style="max-width: 200px;">
+                    <option value="7" {% if time_period == 7 %}selected{% endif %}>Last Week</option>
+                    <option value="30" {% if time_period == 30 %}selected{% endif %}>Last Month</option>
+                    <option value="90" {% if time_period == 90 %}selected{% endif %}>Last 3 Months</option>
+                    <option value="180" {% if time_period == 180 %}selected{% endif %}>Last 6 Months</option>
+                    <option value="365" {% if time_period == 365 %}selected{% endif %}>Last Year</option>
+                </select>
+                {% if selected_exercise_id %}
+                <input type="hidden" name="exercise" value="{{ selected_exercise_id }}">
+                {% endif %}
+                <button type="submit" class="btn btn-primary">Update</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="display-4 fw-bold text-primary">{{ user_stats.total_workouts }}</h3>
+                    <p class="text-muted">Total Workouts</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="display-4 fw-bold text-success">{{ user_stats.total_duration|format_mins }}</h3>
+                    <p class="text-muted">Total Time</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="display-4 fw-bold {% streak_class user_stats.current_streak %}">{{ user_stats.current_streak }}</h3>
+                    <p class="text-muted">Current Streak</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="display-4 fw-bold text-info">{{ user_stats.workout_frequency }}</h3>
+                    <p class="text-muted">Workouts/Week</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- BMI Info (if available) -->
+    {% if bmi %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Body Mass Index (BMI)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 text-center">
+                    <h3 class="display-4 fw-bold 
+                        {% if bmi_category == 'Normal weight' %}
+                        text-success
+                        {% elif bmi_category == 'Underweight' or bmi_category == 'Overweight' %}
+                        text-warning
+                        {% else %}
+                        text-danger
+                        {% endif %}
+                    ">{{ bmi }}</h3>
+                    <p>Your BMI</p>
+                </div>
+                <div class="col-md-8">
+                    <h4>{{ bmi_category }}</h4>
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 18.5%;" aria-valuenow="18.5" aria-valuemin="0" aria-valuemax="100">Underweight</div>
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 6.5%;" aria-valuenow="6.5" aria-valuemin="0" aria-valuemax="100">Normal</div>
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: 5%;" aria-valuenow="5" aria-valuemin="0" aria-valuemax="100">Overweight</div>
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: 70%;" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100">Obese</div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <small>0</small>
+                        <small>18.5</small>
+                        <small>25</small>
+                        <small>30</small>
+                        <small>40+</small>
+                    </div>
+                    <div class="mt-3">
+                        <p><small>BMI is a screening tool, not a diagnostic of body fatness or health. Consult a healthcare provider for more information.</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Suggested Workout -->
+    {% if suggested_workout %}
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Today's Suggested Workout</h5>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3>{{ suggested_workout.workout_day.day_name }}</h3>
+                    <p class="text-muted">{{ suggested_workout.workout_day.plan.name }}</p>
+                    <p>{{ suggested_workout.reason }}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{% url 'start_workout_day' suggested_workout.workout_day.id %}" class="btn btn-success">
+                        Start Workout <i class="fas fa-play-circle"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Exercise Progress -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Exercise Progress</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="mb-3">
+                <div class="row">
+                    <div class="col-md-8">
+                        <select name="exercise" class="form-select">
+                            <option value="">Select Exercise</option>
+                            {% for exercise in exercises %}
+                            <option value="{{ exercise.id }}" {% if selected_exercise_id == exercise.id|stringformat:"i" %}selected{% endif %}>
+                                {{ exercise.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        {% if time_period != 30 %}
+                        <input type="hidden" name="period" value="{{ time_period }}">
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary">View Progress</button>
+                    </div>
+                </div>
+            </form>
+            
+            {% if exercise_progress %}
+                <h4>Progress for {{ exercise_progress.0.exercise.name }}</h4>
+                
+                {% if volume_progress.enough_data %}
+                <div class="alert 
+                    {% if volume_progress.is_improving %}
+                    alert-success
+                    {% elif volume_progress.volume_change == 0 %}
+                    alert-secondary
+                    {% else %}
+                    alert-warning
+                    {% endif %}
+                ">
+                    <i class="fas 
+                        {% if volume_progress.is_improving %}
+                        fa-arrow-up
+                        {% elif volume_progress.volume_change == 0 %}
+                        fa-equals
+                        {% else %}
+                        fa-arrow-down
+                        {% endif %}
+                    "></i>
+                    
+                    {% if volume_progress.is_improving %}
+                    Volume has increased by {{ volume_progress.volume_change_percent }}% over this period.
+                    {% elif volume_progress.volume_change == 0 %}
+                    No change in volume over this period.
+                    {% else %}
+                    Volume has decreased by {{ volume_progress.volume_change_percent|absolute }}% over this period.
+                    {% endif %}
+                    
+                    <span class="ms-2 badge 
+                        {% if volume_progress.trend == 'improving' %}
+                        bg-success
+                        {% elif volume_progress.trend == 'declining' %}
+                        bg-danger
+                        {% elif volume_progress.trend == 'fluctuating' %}
+                        bg-warning
+                        {% else %}
+                        bg-secondary
+                        {% endif %}
+                    ">
+                        {{ volume_progress.trend|title }}
+                    </span>
+                </div>
+                {% endif %}
+                
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Sets</th>
+                                <th>Reps</th>
+                                <th>Weight (kg)</th>
+                                <th>Volume</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in exercise_progress %}
+                            <tr>
+                                <td>{{ entry.date }}</td>
+                                <td>{{ entry.sets }}</td>
+                                <td>{{ entry.reps|join:", " }}</td>
+                                <td>{{ entry.weights|join:", " }}</td>
+                                <td>{{ entry.volume }}</td>
+                                <td>{{ entry.notes|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% elif selected_exercise_id %}
+                <div class="alert alert-info">
+                    No workout data available for this exercise in the selected time period.
+                </div>
+            {% else %}
+                <div class="alert alert-secondary">
+                    Select an exercise to view progress data.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Favorite Exercises -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Most Used Exercises</h5>
+        </div>
+        <div class="card-body">
+            {% if user_stats.favorite_exercises %}
+                <div class="row">
+                    {% for exercise in user_stats.favorite_exercises %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5>{{ exercise.exercise__name }}</h5>
+                                <p class="text-muted">Used {{ exercise.count }} times</p>
+                                <a href="?exercise={{ exercise.exercise_id }}&period={{ time_period }}" class="btn btn-sm btn-outline-primary">View Progress</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No exercise data available for the selected time period.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

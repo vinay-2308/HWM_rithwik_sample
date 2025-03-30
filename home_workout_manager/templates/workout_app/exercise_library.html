@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Exercise Library{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Exercise Library</h1>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExerciseModal">
+            <i class="fas fa-plus"></i> Add New Exercise
+        </button>
+    </div>
+    
+    <!-- Search and Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" name="search" placeholder="Search exercises..." value="{{ request.GET.search|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {% if exercises %}
+    <div class="row">
+        {% for exercise in exercises %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ exercise.name }}</h5>
+                </div>
+                {% if exercise.image %}
+                <img src="{{ exercise.image.url }}" class="card-img-top" alt="{{ exercise.name }}">
+                {% else %}
+                <div class="card-img-top bg-light text-center py-5">
+                    <i class="fas fa-dumbbell fa-4x text-muted"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <p class="card-text">{{ exercise.description|truncatechars:100 }}</p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="{% url 'exercise_detail' exercise.pk %}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-info-circle"></i> View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No exercises found in the library. Click 'Add New Exercise' to add one!
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Exercise Modal -->
+<div class="modal fade" id="addExerciseModal" tabindex="-1" aria-labelledby="addExerciseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addExerciseModalLabel">Add New Exercise</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {{ form|crispy }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Exercise</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

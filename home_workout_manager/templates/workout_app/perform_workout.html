@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+
+{% block title %}Workout in Progress{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ workout_log.workout_day.day_name }} <small class="text-muted">{{ workout_log.workout_plan.name }}</small></h1>
+        <div>
+            <button id="completeWorkoutBtn" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#completeWorkoutModal">
+                <i class="fas fa-check"></i> Complete Workout
+            </button>
+            <a href="{% url 'workout' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </div>
+    
+    <!-- Timer Card -->
+    <div class="card mb-4">
+        <div class="card-body text-center">
+            <h3>Workout Timer</h3>
+            <div class="display-4 mb-3" id="workoutTimer">00:00</div>
+            <div class="btn-group">
+                <button id="startTimerBtn" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Start
+                </button>
+                <button id="pauseTimerBtn" class="btn btn-warning" disabled>
+                    <i class="fas fa-pause"></i> Pause
+                </button>
+                <button id="resetTimerBtn" class="btn btn-danger" disabled>
+                    <i class="fas fa-redo"></i> Reset
+                </button>
+            </div>
+            <div class="mt-3" id="restTimerContainer" style="display: none;">
+                <h5>Rest Timer</h5>
+                <div class="h2" id="restTimer">00</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Exercise List -->
+    <form id="workoutForm" method="post" action="">
+        {% csrf_token %}
+        <input type="hidden" id="workoutDurationInput" name="workout_duration" value="0">
+        
+        {% for exercise_log in exercise_logs %}
+        <div class="card mb-4 exercise-card" id="exerciseCard{{ exercise_log.pk }}">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">{{ exercise_log.exercise.name }}</h5>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="exerciseComplete{{ exercise_log.pk }}" onchange="toggleExerciseComplete('{{ exercise_log.pk }}')">
+                    <label class="form-check-label" for="exerciseComplete{{ exercise_log.pk }}">Completed</label>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if exercise_log.exercise.image %}
+                <img src="{{ exercise_log.exercise.image.url }}" class="img-fluid rounded mb-3" style="max-height: 200px;" alt="{{ exercise_log.exercise.name }}">
+                {% endif %}
+                
+                <input type="hidden" name="sets_completed_{{ exercise_log.pk }}" id="setsCompleted{{ exercise_log.pk }}" value="0">
+                <input type="hidden" name="reps_completed_{{ exercise_log.pk }}" id="repsCompleted{{ exercise_log.pk }}" value="[]">
+                <input type="hidden" name="weight_used_{{ exercise_log.pk }}" id="weightUsed{{ exercise_log.pk }}" value="[]">
+                
+                <div class="mb-3">
+                    <label class="form-label">Track your sets</label>
+                    <div class="table-responsive">
+                            <table class="table table-bordered" id="setsTable{{ exercise_log.pk }}">
+                                <thead>
+                                    <tr>
+                                        <th>Set</th>
+                                        <th>Target Reps</th>
+                                        <th>Weight (kg)</th>
+                                        <th>Reps Done</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for i in exercise_log.get_set_range %}
+                                    <tr id="setRow{{ exercise_log.pk }}_{{ i }}" class="set-row">
+                                        <td>{{ i }}</td>
+                                        <td>{{ exercise_log.target_reps }}</td>
+                                        <td>
+                                            <input type="number" class="form-control weight-input" 
+                                                   data-exercise="{{ exercise_log.pk }}" 
+                                                   data-set="{{ i }}" 
+                                                   step="0.5" min="0" 
+                                                   value="{{ exercise_log.suggested_weight }}">
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control reps-input" 
+                                                   data-exercise="{{ exercise_log.pk }}" 
+                                                   data-set="{{ i }}" 
+                                                   min="0" max="100">
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-primary complete-set-btn" 
+                                                    data-exercise="{{ exercise_log.pk }}" 
+                                                    data-set="{{ i }}">
+                                                <i class="fas fa-check"></i> Complete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes_{{ exercise_log.pk }}" rows="2" 
+                                  placeholder="How did this exercise feel?"></textarea>
+                    </div>
+                    
+                    {% if exercise_log.exercise.instructions %}
+                    <div class="mb-3">
+                        <button class="btn btn-sm btn-info" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#instructions{{ exercise_log.pk }}">
+                            <i class="fas fa-info-circle"></i> Show Instructions
+                        </button>
+                        <div class="collapse mt-2" id="instructions{{ exercise_log.pk }}">
+                            <div class="card card-body bg-light">
+                                {{ exercise_log.exercise.instructions|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </form>
+        
+        <!-- Complete Workout Modal -->
+        <div class="modal fade" id="completeWorkoutModal" tabindex="-1" aria-labelledby="completeWorkoutModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="completeWorkoutModalLabel">Complete Workout</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to finish this workout?</p>
+                        
+                        <div class="mb-3">
+                            <label for="workoutRating" class="form-label">How was your workout?</label>
+                            <div class="rating-container">
+                                <div class="rating">
+                                    <input type="radio" id="star5" name="workout_rating" value="5">
+                                    <label for="star5"></label>
+                                    <input type="radio" id="star4" name="workout_rating" value="4">
+                                    <label for="star4"></label>
+                                    <input type="radio" id="star3" name="workout_rating" value="3">
+                                    <label for="star3"></label>
+                                    <input type="radio" id="star2" name="workout_rating" value="2">
+                                    <label for="star2"></label>
+                                    <input type="radio" id="star1" name="workout_rating" value="1">
+                                    <label for="star1"></label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="workoutNotes" class="form-label">Workout Notes</label>
+                            <textarea class="form-control" id="workoutNotes" name="workout_notes" rows="3" 
+                                      placeholder="How did you feel overall? Any issues?"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" id="submitWorkoutBtn">Complete Workout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript for Workout Functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Timer functionality
+            let workoutSeconds = 0;
+            let workoutTimer;
+            let isTimerRunning = false;
+            let restSeconds = 0;
+            let restTimer;
+            
+            const workoutTimerEl = document.getElementById('workoutTimer');
+            const startTimerBtn = document.getElementById('startTimerBtn');
+            const pauseTimerBtn = document.getElementById('pauseTimerBtn');
+            const resetTimerBtn = document.getElementById('resetTimerBtn');
+            const restTimerContainer = document.getElementById('restTimerContainer');
+            const restTimerEl = document.getElementById('restTimer');
+            const workoutDurationInput = document.getElementById('workoutDurationInput');
+            
+            // Format time as MM:SS
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            // Update workout timer
+            function updateWorkoutTimer() {
+                workoutSeconds++;
+                workoutTimerEl.textContent = formatTime(workoutSeconds);
+                workoutDurationInput.value = workoutSeconds;
+            }
+            
+            // Start workout timer
+            startTimerBtn.addEventListener('click', function() {
+                if (!isTimerRunning) {
+                    workoutTimer = setInterval(updateWorkoutTimer, 1000);
+                    isTimerRunning = true;
+                    startTimerBtn.disabled = true;
+                    pauseTimerBtn.disabled = false;
+                    resetTimerBtn.disabled = false;
+                }
+            });
+            
+            // Pause workout timer
+            pauseTimerBtn.addEventListener('click', function() {
+                clearInterval(workoutTimer);
+                isTimerRunning = false;
+                startTimerBtn.disabled = false;
+                pauseTimerBtn.disabled = true;
+            });
+            
+            // Reset workout timer
+            resetTimerBtn.addEventListener('click', function() {
+                clearInterval(workoutTimer);
+                workoutSeconds = 0;
+                workoutTimerEl.textContent = formatTime(workoutSeconds);
+                workoutDurationInput.value = 0;
+                isTimerRunning = false;
+                startTimerBtn.disabled = false;
+                pauseTimerBtn.disabled = true;
+                resetTimerBtn.disabled = true;
+            });
+            
+            // Rest timer functionality
+            function startRestTimer(seconds) {
+                restSeconds = seconds;
+                restTimerEl.textContent = restSeconds;
+                restTimerContainer.style.display = 'block';
+                
+                if (restTimer) {
+                    clearInterval(restTimer);
+                }
+                
+                restTimer = setInterval(function() {
+                    restSeconds--;
+                    restTimerEl.textContent = restSeconds;
+                    
+                    if (restSeconds <= 0) {
+                        clearInterval(restTimer);
+                        restTimerContainer.style.display = 'none';
+                        // Play sound alert
+                        const audio = new Audio('/static/sounds/timer-end.mp3');
+                        audio.play();
+                    }
+                }, 1000);
+            }
+            
+            // Exercise set tracking
+            const completeSetBtns = document.querySelectorAll('.complete-set-btn');
+            
+            completeSetBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const exerciseId = this.getAttribute('data-exercise');
+                    const setNumber = this.getAttribute('data-set');
+                    const repsInput = document.querySelector(`.reps-input[data-exercise="${exerciseId}"][data-set="${setNumber}"]`);
+                    const weightInput = document.querySelector(`.weight-input[data-exercise="${exerciseId}"][data-set="${setNumber}"]`);
+                    
+                    // Mark set as completed
+                    const row = document.getElementById(`setRow${exerciseId}_${setNumber}`);
+                    row.classList.add('table-success');
+                    this.disabled = true;
+                    
+                    // Update hidden fields for form submission
+                    updateExerciseData(exerciseId);
+                    
+                    // Start rest timer (60 seconds by default)
+                    startRestTimer(60);
+                });
+            });
+            
+            // Toggle exercise complete
+            function toggleExerciseComplete(exerciseId) {
+                const card = document.getElementById(`exerciseCard${exerciseId}`);
+                const checkbox = document.getElementById(`exerciseComplete${exerciseId}`);
+                
+                if (checkbox.checked) {
+                    card.classList.add('border-success');
+                } else {
+                    card.classList.remove('border-success');
+                }
+                
+                // Check if all exercises are completed
+                checkAllExercisesComplete();
+            }
+            
+            // Make the toggleExerciseComplete function available globally
+            window.toggleExerciseComplete = toggleExerciseComplete;
+            
+            // Update exercise data in hidden fields
+            function updateExerciseData(exerciseId) {
+                const repsInputs = document.querySelectorAll(`.reps-input[data-exercise="${exerciseId}"]`);
+                const weightInputs = document.querySelectorAll(`.weight-input[data-exercise="${exerciseId}"]`);
+                const setsCompletedInput = document.getElementById(`setsCompleted${exerciseId}`);
+                const repsCompletedInput = document.getElementById(`repsCompleted${exerciseId}`);
+                const weightUsedInput = document.getElementById(`weightUsed${exerciseId}`);
+                
+                // Count completed sets
+                let completedSets = 0;
+                const repsArray = [];
+                const weightArray = [];
+                
+                repsInputs.forEach((input, index) => {
+                    const reps = input.value ? parseInt(input.value) : 0;
+                    const weight = weightInputs[index].value ? parseFloat(weightInputs[index].value) : 0;
+                    
+                    repsArray.push(reps);
+                    weightArray.push(weight);
+                    
+                    if (reps > 0) {
+                        completedSets++;
+                    }
+                });
+                
+                // Update hidden fields
+                setsCompletedInput.value = completedSets;
+                repsCompletedInput.value = JSON.stringify(repsArray);
+                weightUsedInput.value = JSON.stringify(weightArray);
+            }
+            
+            // Check if all exercises are complete
+            function checkAllExercisesComplete() {
+                const checkboxes = document.querySelectorAll('[id^="exerciseComplete"]');
+                const completeWorkoutBtn = document.getElementById('completeWorkoutBtn');
+                
+                let allComplete = true;
+                checkboxes.forEach(checkbox => {
+                    if (!checkbox.checked) {
+                        allComplete = false;
+                    }
+                });
+                
+                if (allComplete) {
+                    completeWorkoutBtn.classList.add('btn-pulse');
+                } else {
+                    completeWorkoutBtn.classList.remove('btn-pulse');
+                }
+            }
+            
+            // Submit workout form
+            const submitWorkoutBtn = document.getElementById('submitWorkoutBtn');
+            const workoutForm = document.getElementById('workoutForm');
+            
+            submitWorkoutBtn.addEventListener('click', function() {
+                // Get all exercise data
+                document.querySelectorAll('[id^="exerciseCard"]').forEach(card => {
+                    const exerciseId = card.id.replace('exerciseCard', '');
+                    updateExerciseData(exerciseId);
+                });
+                
+                // Add workout rating to form
+                const ratingInputs = document.querySelectorAll('input[name="workout_rating"]');
+                let selectedRating = 0;
+                
+                ratingInputs.forEach(input => {
+                    if (input.checked) {
+                        selectedRating = input.value;
+                    }
+                });
+                
+                const ratingInput = document.createElement('input');
+                ratingInput.type = 'hidden';
+                ratingInput.name = 'workout_rating';
+                ratingInput.value = selectedRating;
+                workoutForm.appendChild(ratingInput);
+                
+                // Add workout notes to form
+                const notesInput = document.createElement('input');
+                notesInput.type = 'hidden';
+                notesInput.name = 'workout_notes';
+                notesInput.value = document.getElementById('workoutNotes').value;
+                workoutForm.appendChild(notesInput);
+                
+                // Submit the form
+                workoutForm.submit();
+            });
+        });
+    </script>
+    {% endblock %}

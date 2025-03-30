@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ day.day_name }} - {{ day.plan.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .exercise-list {
+        min-height: 50px;
+    }
+    .exercise-item {
+        cursor: grab;
+    }
+    .exercise-item:active {
+        cursor: grabbing;
+    }
+    .exercise-item.dragging {
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ day.day_name }} <small class="text-muted">{{ day.plan.name }}</small></h1>
+        <div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExerciseModal">
+                <i class="fas fa-plus"></i> Add Exercise
+            </button>
+            <a href="{% url 'workout_plan_detail' day.plan.pk %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Plan
+            </a>
+        </div>
+    </div>
+    
+    {% if exercises %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">Exercises</h5>
+            <p class="card-text text-muted">Drag and drop to reorder exercises</p>
+        </div>
+        <div class="card-body">
+            <ul class="list-group exercise-list" id="exerciseList">
+                {% for exercise in exercises %}
+                <li class="list-group-item exercise-item d-flex justify-content-between align-items-center" data-id="{{ exercise.pk }}">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-grip-vertical me-3 text-muted"></i>
+                        <div>
+                            <h5 class="mb-0">{{ exercise.exercise.name }}</h5>
+                            <p class="text-muted mb-0">{{ exercise.sets }} sets × {{ exercise.reps }} reps | Rest: {{ exercise.rest_time }}s</p>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editExerciseModal{{ exercise.pk }}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <a href="{% url 'delete_workout_exercise' exercise.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to remove this exercise?');">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </li>
+                
+                <!-- Edit Exercise Modal -->
+                <div class="modal fade" id="editExerciseModal{{ exercise.pk }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit Exercise</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form method="post" action="{% url 'workout_day_detail' day.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="exercise_id" value="{{ exercise.pk }}">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Exercise</label>
+                                        <input type="text" class="form-control" value="{{ exercise.exercise.name }}" readonly>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label class="form-label">Sets</label>
+                                                <input type="number" name="sets" class="form-control" value="{{ exercise.sets }}" min="1">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label class="form-label">Reps</label>
+                                                <input type="number" name="reps" class="form-control" value="{{ exercise.reps }}" min="1">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label class="form-label">Rest (seconds)</label>
+                                                <input type="number" name="rest_time" class="form-control" value="{{ exercise.rest_time }}" min="0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No exercises have been added to this workout day yet. Click 'Add Exercise' to get started!
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Exercise Modal -->
+<div class="modal fade" id="addExerciseModal" tabindex="-1" aria-labelledby="addExerciseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addExerciseModalLabel">Add Exercise</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.exercise.id_for_label }}" class="form-label">Exercise</label>
+                                {{ form.exercise|as_crispy_field }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="{{ form.sets.id_for_label }}" class="form-label">Sets</label>
+                                        {{ form.sets }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="{{ form.reps.id_for_label }}" class="form-label">Reps</label>
+                                        {{ form.reps }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="{{ form.rest_time.id_for_label }}" class="form-label">Rest (s)</label>
+                                        {{ form.rest_time }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{ form.order }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Exercise</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const exerciseList = document.getElementById('exerciseList');
+    
+    if (exerciseList) {
+        // Initialize drag and drop functionality
+        let draggedItem = null;
+        
+        // Add event listeners to all exercise items
+        const exerciseItems = exerciseList.querySelectorAll('.exercise-item');
+        exerciseItems.forEach(item => {
+            item.addEventListener('dragstart', function() {
+                draggedItem = item;
+                setTimeout(() => {
+                    item.classList.add('dragging');
+                }, 0);
+            });
+            
+            item.addEventListener('dragend', function() {
+                draggedItem = null;
+                item.classList.remove('dragging');
+                
+                // Update the order in the database
+                updateExerciseOrder();
+            });
+            
+            item.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(exerciseList, e.clientY);
+                if (afterElement == null) {
+                    exerciseList.appendChild(draggedItem);
+                } else {
+                    exerciseList.insertBefore(draggedItem, afterElement);
+                }
+            });
+            
+            // Make items draggable
+            item.setAttribute('draggable', 'true');
+        });
+        
+        // Helper function to determine where to place the dragged item
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.exercise-item:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+        
+        // Function to update exercise order in the database
+        function updateExerciseOrder() {
+            const items = exerciseList.querySelectorAll('.exercise-item');
+            const exerciseIds = Array.from(items).map(item => item.dataset.id);
+            
+            // Send AJAX request to update order
+            fetch('{% url "update_exercise_order" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: 'exercise_ids=' + JSON.stringify(exerciseIds)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('Exercise order updated successfully');
+                } else {
+                    console.error('Error updating exercise order');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    }
+});
+</script>
+{% endblock %}
